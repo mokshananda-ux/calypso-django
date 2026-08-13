@@ -1,127 +1,63 @@
 {% extends 'base.html'%}
 
-{% blockcontent %}
+{% load static %}
+
+{% block content %}
 
 <section class="section-content padding-y bg">
 <div class="container">
 
 <!-- ============================ COMPONENT 1 ================================= -->
+{% if not cart_items %}
+	<div class="alert alert-info text-center">
+		<h2>Your cart is empty.</h2>
+		<div class="text-center">
+			continue shopping <a href="{% url 'store' %}" class="btn btn-primary">Go to Store</a>
+		</div>
+	</div>
+{% else %}
+
 
 <div class="row">
 	<aside class="col-lg-9">
 <div class="card">
 <table class="table table-borderless table-shopping-cart">
+
 <thead class="text-muted">
 <tr class="small text-uppercase">
   <th scope="col">Product</th>
-  <th scope="col" width="120">Quantity</th>
-  <th scope="col" width="120">Price</th>
+    <th scope="col" width="120">Price</th>
   <th scope="col" class="text-right" width="200"> </th>
 </tr>
+
+
 </thead>
 <tbody>
-<tr>
+
+	{% for cart_item in cart_items %}
+	<tr>
 	<td>
 		<figure class="itemside align-items-center">
-			<div class="aside"><img src="./images/items/11.jpg" class="img-sm"></div>
+			<div class="aside"><img src="{% if cart_item.product.image %}{{ cart_item.product.image.url }}{% else %}{% static 'images/items/1.jpg' %}{% endif %}" class="img-sm" alt="{{ cart_item.product.name }}"></div>
 			<figcaption class="info">
-				<a href="#" class="title text-dark">Camera Canon EOS M50 Kit</a>
-				<p class="text-muted small">Matrix: 25 Mpx <br> Brand: Canon</p>
+				<a href="{{ cart_item.product.get_url }}" class="title text-dark">{{ cart_item.product.name }}</a>
+				<p class="text-muted small">Matrix: 25 Mpx <br> Brand: {{ cart_item.product.brand }}</p>
 			</figcaption>
 		</figure>
 	</td>
-	<td> 
-		<!-- col.// -->
-					<div class="col"> 
-						<div class="input-group input-spinner">
-							<div class="input-group-prepend">
-							<button class="btn btn-light" type="button" id="button-plus"> <i class="fa fa-minus"></i> </button>
-							</div>
-							<input type="text" class="form-control"  value="1">
-							<div class="input-group-append">
-							<button class="btn btn-light" type="button" id="button-minus"> <i class="fa fa-plus"></i> </button>
-							</div>
-						</div> <!-- input-group.// -->
-					</div> <!-- col.// -->
-	</td>
+	
 	<td> 
 		<div class="price-wrap"> 
-			<var class="price">$1156.00</var> 
-			<small class="text-muted"> $315.20 each </small> 
+			<var class="price">${{ cart_item.product.price|floatformat:2 }}</var> 
+
 		</div> <!-- price-wrap .// -->
 	</td>
 	<td class="text-right"> 
-	<a href="" class="btn btn-danger"> Remove</a>
+	<a href="{% url 'remove_cart' cart_item.product.id %}" onclick="return confirm('Are you sure you want to remove this item from your cart?');" class="btn btn-danger"> Remove</a>
 	</td>
-</tr>
-<tr>
-	<td>
-		<figure class="itemside align-items-center">
-			<div class="aside"><img src="./images/items/10.jpg" class="img-sm"></div>
-			<figcaption class="info">
-				<a href="#" class="title text-dark">ADATA Premier ONE microSDXC</a>
-				<p class="text-muted small">Size: 256 GB  <br> Brand: ADATA </p>
-			</figcaption>
-		</figure>
-	</td>
-	<td> 
-		<!-- col.// -->
-					<div class="col"> 
-						<div class="input-group input-spinner">
-							<div class="input-group-prepend">
-							<button class="btn btn-light" type="button" id="button-plus"> <i class="fa fa-minus"></i> </button>
-							</div>
-							<input type="text" class="form-control"  value="1">
-							<div class="input-group-append">
-							<button class="btn btn-light" type="button" id="button-minus"> <i class="fa fa-plus"></i> </button>
-							</div>
-						</div> <!-- input-group.// -->
-					</div> <!-- col.// -->
-	</td>
-	<td> 
-		<div class="price-wrap"> 
-			<var class="price">$149.97</var> 
-			<small  class="text-muted"> $75.00 each </small>  
-		</div> <!-- price-wrap .// -->
-	</td>
-	<td class="text-right"> 
-	<a href="" class="btn btn-danger"> Remove</a>
-	</td>
-</tr>
-<tr>
-	<td>
-		<figure class="itemside align-items-center">
-			<div class="aside"><img src="./images/items/9.jpg" class="img-sm"></div>
-			<figcaption class="info">
-				<a href="#" class="title text-dark">Logitec headset for gaming</a>
-				<p class="small text-muted">Version: CUH-ZCT2E  <br> Brand: Sony</p>
-			</figcaption>
-		</figure>
-	</td>
-	<td> 
-		<!-- col.// -->
-					<div class="col"> 
-						<div class="input-group input-spinner">
-							<div class="input-group-prepend">
-							<button class="btn btn-light" type="button" id="button-plus"> <i class="fa fa-minus"></i> </button>
-							</div>
-							<input type="text" class="form-control"  value="1">
-							<div class="input-group-append">
-							<button class="btn btn-light" type="button" id="button-minus"> <i class="fa fa-plus"></i> </button>
-							</div>
-						</div> <!-- input-group.// -->
-					</div> <!-- col.// -->
-	</td>
-	<td> 
-		<div class="price-wrap"> 
-			<var class="price">$98.00</var> 
-			<small class="text-muted"> $578.00 each</small> 
-		</div> <!-- price-wrap .// -->
-	</td>
-	<td class="text-right"> 
-		<a href="" class="btn btn-danger"> Remove</a>
-	</td>
-</tr>
+	</tr>
+	{% endfor %}
+
 </tbody>
 </table>
 </div> <!-- card.// -->
@@ -133,21 +69,21 @@
 		<div class="card-body">
 			<dl class="dlist-align">
 			  <dt>Total price:</dt>
-			  <dd class="text-right">$69.97</dd>
+			  <dd class="text-right">${{ total|floatformat:2 }}</dd>
 			</dl>
 			<dl class="dlist-align">
 			  <dt>Tax:</dt>
-			  <dd class="text-right"> $10.00</dd>
+			  <dd class="text-right"> ${{ tax|floatformat:2 }}</dd>
 			</dl>
 			<dl class="dlist-align">
-			  <dt>Total:</dt>
-			  <dd class="text-right text-dark b"><strong>$59.97</strong></dd>
+			  <dt>GrandTotal:</dt>
+			  <dd class="text-right text-dark b"><strong>${{ grand_total|floatformat:2 }}</strong></dd>
 			</dl>
 			<hr>
 			<p class="text-center mb-3">
-				<img src="./images/misc/payments.png" height="26">
+				<img src="{% static 'images/misc/payments.png' %}" height="26">
 			</p>
-			<a href="./place-order.html" class="btn btn-primary btn-block"> Checkout </a>
+			<a href="./place-order.html" class="btn btn-primary btn-block" onclick="return confirm('Are you sure you want to place this order?');"> Checkout </a>
 			<a href="{% url 'store' %}" class="btn btn-light btn-block">Continue Shopping</a>
 		</div> <!-- card-body.// -->
 		</div> <!-- card.// -->
@@ -156,10 +92,12 @@
 
 
 </div> <!-- row.// -->
+
+{% endif %}
 <!-- ============================ COMPONENT 1 END .// ================================= -->
 
 </div> <!-- container .//  -->
 </section>
 <!-- ========================= SECTION CONTENT END// ========================= -->
 
-{% {% endblock %} %}
+{% endblock %}
