@@ -1,8 +1,5 @@
-from email.message import EmailMessage
-
 from django.contrib import auth, messages
 from django.shortcuts import redirect, render
-from django.urls import reverse
 from .forms import RegistrationForm
 from .models import Account
 from django.contrib.auth.decorators import login_required
@@ -13,7 +10,12 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMessage
+
+from carts.views import _cart_id 
+from carts.models import Cart, CartItem
 #verification email
+
+import requests
 
 
 def register(request):
@@ -53,6 +55,7 @@ def register(request):
     }
     return render(request, 'accounts/register.html', context)
 
+
 def login(request):
     if request.method == 'POST':
         email = request.POST.get('email')
@@ -61,10 +64,43 @@ def login(request):
         user = auth.authenticate(email=email, password=password)
 
         if user is not None:
+            try:
+                cart = Cart.objects.get(cart_id=_cart_id(request))
+                is_cart_item_exists = CartItem.objects.filter(cart=cart).exists()
+                if is_cart_item_exists:
+                    cart_items = CartItem.objects.filter(cart=cart)
+
+                    for item in cart_items:
+                        # Verificar si el usuario ya tiene este producto en su carrito
+                        existing_user_item = CartItem.objects.filter(
+                            user=user,
+                            product=item.product,
+                            is_active=True
+                        ).first()
+
+                        if existing_user_item:
+                            # El usuario ya tiene este producto, eliminar el item de sesión
+                            item.delete()
+                        else:
+                            # Asignar el item al usuario
+                            item.user = user
+                            item.save()
+
+            except:
+                pass
+
             auth.login(request, user)
             # User is authenticated, you can log them in
-            messages.success(request, '!Has hecho login con éxito!')
-            return redirect('dashboard')  # Redirect to home page after successful login
+            messages.success(request, '!Has hecho login con éxito¡')
+            url = request.META.get('HTTP_REFERER')
+            try:
+                query = requests.utils.urlparse(url).query
+                params = dict(x.split('=') for x in query.split('&'))
+                if 'next' in params:
+                    nextPage = params['next']  
+                return redirect(nextPage)
+            except:
+                return redirect('dashboard')
         else:
             messages.error(request, 'Email inválido o contraseña incorrecta. Por favor, inténtalo de nuevo.')
             return redirect('login')  # Redirect back to login page on failure
