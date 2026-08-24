@@ -1,0 +1,153 @@
+{% extends 'base.html'%}
+
+{% load static %}
+
+{% block extra_head %}
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id|urlencode }}&currency=USD"></script>
+{% endblock %}
+
+{% block content %}
+
+<section class="section-content padding-y bg">
+<div class="container">
+
+<!-- ============================ COMPONENT 1 ================================= -->
+
+
+<h4 class="text-center mb10"> Review your order and make payment  </h4>
+<div class="row">
+	
+	<aside class="col-lg-8">
+		<div class="card">
+			<h5 class="card-title mb-4">Billing Adress</h5>
+				<div class="card-body">
+				<p class="card-text mb-0">{{order.full_name}}</p>
+				<p class="card-text" mb-0>{{order.full_address}}</p>
+				<p class="card-text mb-0">{{order.city}} {{order.state}}</p>
+				<p class="card-text" mb-0>{{order.email}}</p>
+				<p class="card-text" mb-0>{{order.phone}}</p>
+				{% if order.order_note %}
+					<b> Order Note: </b> {{order.order_note}}
+				{% endif %}
+
+				</div>
+		</div> <!-- card.// -->
+
+		<div class="card">
+			<h5 class="card-title mb-4">Payment Method</h5>
+				<div class="card-body">
+				<p class="card-text">PayPal...</p>
+				</div>
+		</div> <!-- card.// -->
+
+		<div class="card">
+			<h5 class="card-title mb-4">Review Products</h5>
+				<div class="card-body">
+			        <table class="table table-borderless table-shopping-cart">
+
+					<thead class="text-muted">
+						<tr class="small text-uppercase">
+							<th scope="col">Producto</th>
+							<th scope="col" width="120">Precio</th>
+						</tr>
+					</thead>
+
+					<tbody>
+
+						{% for cart_item in cart_items %}
+						<tr>
+						<td>
+							<figure class="itemside align-items-center">
+								<div class="aside"><img src="{% if cart_item.product.image %}{{ cart_item.product.image.url }}{% else %}{% static 'images/items/1.jpg' %}{% endif %}" class="img-sm" alt="{{ cart_item.product.name }}"></div>
+								<figcaption class="info">
+									<a href="{{ cart_item.product.get_url }}" class="title text-dark">{{ cart_item.product.name }}</a>
+									<p class="text-muted small">Matrix: 25 Mpx <br> Brand: {{ cart_item.product.brand }}</p>
+								</figcaption>
+							</figure>
+						</td>
+						
+						<td> 
+							<div class="price-wrap"> 
+								<var class="price">${{ cart_item.product.price|floatformat:2 }}</var> 
+
+							</div> <!-- price-wrap .// -->
+						</td>
+						</tr>
+						{% endfor %}
+
+					</tbody>
+					</table>
+				</div>
+		</div> <!-- card.// -->
+
+	</aside> <!-- col.// -->
+	<aside class="col-lg-4">
+
+		<div class="card">
+		<div class="card-body">
+			<dl class="dlist-align">
+			  <dt>Total price:</dt>
+			  <dd class="text-right">${{ total|floatformat:2 }}</dd>
+			</dl>
+			<dl class="dlist-align">
+			  <dt>Tax:</dt>
+			  <dd class="text-right"> ${{ tax|floatformat:2 }}</dd>
+			</dl>
+			<dl class="dlist-align">
+			  <dt>GrandTotal:</dt>
+			  <dd class="text-right text-dark b"><strong>${{ grand_total|floatformat:2 }}</strong></dd>
+			</dl>
+			<hr>
+			<p class="text-center mb-3">
+				<img src="{% static 'images/misc/payments.png' %}" height="26">
+			</p>
+			<div id="paypal-button-container"></div>
+			<div id="result-message"></div>
+		</div> <!-- card-body.// -->
+		</div> <!-- card.// -->
+
+</aside> <!-- col.// -->
+
+
+</div> <!-- row.// -->
+
+
+<!-- ============================ COMPONENT 1 END .// ================================= -->
+
+</div> <!-- container .//  -->
+</section>
+<!-- ========================= SECTION CONTENT END// ========================= -->
+
+{% if paypal_client_id %}
+<script>
+	paypal.Buttons({
+		createOrder: () => fetch('{% url "paypal_create_order" %}', {
+			method: 'POST',
+			headers: {'X-CSRFToken': '{{ csrf_token }}'}
+		}).then(response => response.json()).then(data => data.id),
+		onApprove: data => fetch('{% url "paypal_capture_order" %}', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'X-CSRFToken': '{{ csrf_token }}'
+			},
+			body: `order_id=${encodeURIComponent(data.orderID)}`
+		}).then(response => response.json()).then(data => {
+			if (data.status !== 'COMPLETED') throw new Error(data.error || 'Payment failed');
+			// Redirigir a la página de confirmación de orden
+			window.location.href = `{% url 'order_complete' %}?order_number=${data.order_number}&payment_id=${data.order_number}`;
+		}),
+		onCancel: () => {
+			document.getElementById('result-message').innerHTML = '<p class="text-warning">Payment cancelled.</p>';
+		},
+		onError: error => {
+			console.error(error);
+			document.getElementById('result-message').innerHTML = '<p class="text-danger">Payment could not be completed.</p>';
+		}
+	}).render('#paypal-button-container');
+</script>
+{% else %}
+<p class="text-danger">PayPal is not configured. Set PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET.</p>
+{% endif %}
+
+{% endblock %}

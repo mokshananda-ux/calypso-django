@@ -10,13 +10,27 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+
+from dotenv import load_dotenv
+
+
+
+
 import email
+import os
 from pathlib import Path
 from django.contrib.messages import constants as messages
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
+
+PAYPAL_BASE_URL = os.getenv(
+    "PAYPAL_BASE_URL",
+    "https://api-m.sandbox.paypal.com",
+)
+
 
 
 # Quick-start development settings - unsuitable for production
@@ -44,6 +58,7 @@ INSTALLED_APPS = [
     'accounts',
     'store',
     'carts',
+    'orders',
 ]
 
 MIDDLEWARE = [
@@ -149,3 +164,12 @@ EMAIL_PORT = 587
 EMAIL_HOST_USER = 'mokshananda.kashyapa@gmail.com'
 EMAIL_HOST_PASSWORD = 'vjpf ghbq cafq kvnr'
 EMAIL_USE_TLS = True
+
+
+PAYPAL_CLIENT_ID = os.getenv("PAYPAL_CLIENT_ID", "")
+PAYPAL_CLIENT_SECRET = os.getenv("PAYPAL_CLIENT_SECRET", "")
+PAYPAL_MODE = os.getenv("PAYPAL_MODE", "sandbox")
+
+
+
+
