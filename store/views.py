@@ -1,10 +1,14 @@
-from django.shortcuts import get_object_or_404, render
-from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.shortcuts import get_object_or_404, render, redirect
+from django.core.paginator import Paginator
 from carts.models import CartItem
 from carts.views import _cart_id
 from category.models import Category
-from .models import Product
+from .models import Product, ReviewRating
+from .forms import ReviewForm
 from django.db.models import Q
+from django.contrib import messages
+from orders.models import OrderProduct
+
 
 # Create your views here.
 
@@ -72,3 +76,42 @@ def search(request):
         }   
         
     return render(request, 'store/store.html', context)
+
+def submit_review(request, product_id):
+    if not request.user.is_authenticated:
+        messages.error(request, 'Debes iniciar sesión para escribir una reseña.')
+        return redirect('login')
+
+    # Verificar si el usuario ha comprado este producto
+    try:
+        order_product = OrderProduct.objects.get(
+            user=request.user,
+            product_id=product_id,
+            order__is_ordered=True,
+            payment__status='COMPLETED',
+        )
+    except OrderProduct.DoesNotExist:
+        messages.error(request, 'Solo puedes reseñar productos que has comprado.')
+        return redirect('my_reviews')
+
+    url = request.META.get('HTTP_REFERER')
+    if request.method == 'POST':
+        try:
+            reviews = ReviewRating.objects.get(user_id=request.user.id, product_id=product_id)
+            form = ReviewForm(request.POST, instance=reviews)
+            form.save()
+            messages.success(request, 'Gracias! Tu reseña ha sido actualizada.')
+            return redirect('my_reviews')
+        except ReviewRating.DoesNotExist:
+            form = ReviewForm(request.POST)
+            if form.is_valid():
+                data = ReviewRating()
+                data.subject = form.cleaned_data['subject']
+                data.rating = form.cleaned_data['rating']
+                data.review = form.cleaned_data['review']
+                data.ip = request.META.get('REMOTE_ADDR')
+                data.product_id = product_id
+                data.user_id = request.user.id
+                data.save()
+                messages.success(request, 'Gracias! Tu reseña ha sido enviada.')
+                return redirect('my_reviews')

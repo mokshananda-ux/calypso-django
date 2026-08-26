@@ -11,8 +11,10 @@ from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMessage
 
-from carts.views import _cart_id 
+from carts.views import _cart_id
 from carts.models import Cart, CartItem
+from orders.models import OrderProduct
+from store.models import ReviewRating
 #verification email
 
 import requests
@@ -196,3 +198,29 @@ def resetPassword(request):
             return redirect('resetPassword')  # Redirect back to reset password page on failure
 
     return render(request, 'accounts/resetPassword.html')
+
+
+@login_required(login_url='login')
+def my_reviews(request):
+    # Obtener todos los productos que el usuario ha comprado
+    purchased_products = OrderProduct.objects.filter(
+        user=request.user,
+        order__is_ordered=True,
+        payment__status='COMPLETED'
+    )
+
+    # Obtener las reseñas que el usuario ya ha escrito
+    user_reviews = ReviewRating.objects.filter(user=request.user)
+
+    # Crear un diccionario para verificar si un producto tiene reseña
+    reviewed_products = {}
+    for review in user_reviews:
+        reviewed_products[review.product.id] = review
+
+    context = {
+        'purchased_products': purchased_products,
+        'user_reviews': user_reviews,
+        'reviewed_products': reviewed_products,
+    }
+
+    return render(request, 'accounts/my_reviews.html', context)

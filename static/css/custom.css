@@ -1,0 +1,48 @@
+.rate > input {
+    display: none;
+}
+
+.rate {
+    display: inline-block;
+    border: 0;
+}
+
+.rate > label {
+    float: right;
+}
+
+.rate > label:before{
+    display: inline-block;
+    font-size: 1.1 rem;
+    font-family: FontAwesome;
+    content: "\f005";
+    margin: 0 2px;
+    color: #ddd;
+    padding: 0 1px;
+    cursor: pointer;
+}
+
+.rate.half:before {
+    content: "\f089";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 50%;
+    overflow: hidden;
+}
+
+.rate.full:before {
+    content: "\f005";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    overflow: hidden;
+}
+
+input:checked + label:hover, input:checked ~ label:hover, input:checked ~ label:hover ~ label,
+input:checked ~ label:hover ~ label:hover {
+    color: #cc9000;
+}
+
+
