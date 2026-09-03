@@ -1,13 +1,13 @@
 from django import forms
-from .models import Account
+from .models import Account, UserProfile
 
 class RegistrationForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput(attrs={
-        'placeholder': 'Enter Password',
+        'placeholder': 'Ingresa Contraseña',
         
     }))
     confirm_password = forms.CharField(widget=forms.PasswordInput(attrs={
-        'placeholder': 'Confirm Password',
+        'placeholder': 'Confirmar Contraseña',
         
     }))
     class Meta:
@@ -22,20 +22,41 @@ class RegistrationForm(forms.ModelForm):
 
         if password != confirm_password:
             raise forms.ValidationError(
-                "Password does not match!"
+                "Las contraseñas no coinciden!"
             )
 
 
     def __init__(self, *args, **kwargs):
         super(RegistrationForm, self).__init__(*args, **kwargs)
-        self.fields['first_name'].widget.attrs['placeholder'] = 'Enter First Name'
-        self.fields['last_name'].widget.attrs['placeholder'] = 'Enter Last Name'
-        self.fields['email'].widget.attrs['placeholder'] = 'Enter Email'
-        self.fields['phone_number'].widget.attrs['placeholder'] = 'Enter Phone Number'
-        self.fields['password'].widget.attrs['placeholder'] = 'Enter Password'
-        self.fields['confirm_password'].widget.attrs['placeholder'] = 'Confirm Password'
+        self.fields['first_name'].widget.attrs['placeholder'] = 'Ingresa Nombre'
+        self.fields['last_name'].widget.attrs['placeholder'] = 'Ingresa Apellido'
+        self.fields['email'].widget.attrs['placeholder'] = 'Ingresa Correo Electrónico'
+        self.fields['phone_number'].widget.attrs['placeholder'] = 'Ingresa Teléfono'
+        self.fields['password'].widget.attrs['placeholder'] = 'Ingresa Contraseña'
+        self.fields['confirm_password'].widget.attrs['placeholder'] = 'Confirmar Contraseña'
 
         for field in self.fields:
             self.fields[field].widget.attrs['class'] = 'form-control'
 
-    
+
+class UserForm(forms.ModelForm):
+    class Meta:
+        model = Account
+        fields = ['first_name', 'last_name', 'phone_number']
+
+    def __init__(self, *args, **kwargs):
+        super(UserForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            self.fields[field].widget.attrs['class'] = 'form-control'
+
+
+class UserProfileForm(forms.ModelForm):
+    profile_picture = forms.ImageField(required=False, error_messages={'invalid': "Seleccione una imagen válida. Los archivos deben estar en formato JPEG, PNG o GIF."}, widget=forms.FileInput)
+    class Meta:
+        model = UserProfile
+        fields = ['profile_picture', 'address_line_1', 'address_line_2', 'city', 'state', 'zip_code']
+
+    def __init__(self, *args, **kwargs):
+        super(UserProfileForm, self).__init__(*args, **kwargs)
+        for field in self.fields:
+            self.fields[field].widget.attrs['class'] = 'form-control'

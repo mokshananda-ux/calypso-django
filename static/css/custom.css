@@ -46,3 +46,23 @@ input:checked ~ label:hover ~ label:hover {
 }
 
 
+ul.thumb-big-thumb {
+    list-style: none;
+    padding: 0;
+    margin: auto;
+    float: left;
+}
+
+ul.thumb-big-thumb li {
+    list-style: none;
+    margin: 10px;
+}
+
+ul.thumb-big-thumb img {
+    display: block;
+    width: 80%;
+    height: 80%;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+

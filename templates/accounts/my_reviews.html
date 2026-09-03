@@ -10,36 +10,22 @@
 {% include 'includes/alerts.html' %}
 <div class="container">
 	<div class="row">
-	<aside class="col-md-3">
-		<!--   SIDEBAR   -->
-		<ul class="list-group">
-			<a class="list-group-item" href="{% url 'dashboard' %}"> My order history </a>
-			<a class="list-group-item" href="#"> Transactions </a>
-			<a class="list-group-item" href="#"> Return and refunds </a>
-			<a class="list-group-item" href="#"> Settings </a>
-			<a class="list-group-item" href="#"> My Selling Items </a>
-			<a class="list-group-item" href="#"> Received orders </a>
-			<a class="list-group-item active" href="{% url 'my_reviews' %}"> My Rating and Reviews </a>
-		</ul>
-		<br>
-		<a class="btn btn-light btn-block" href="{% url 'logout' %}"> <i class="fa fa-power-off"></i> <span class="text">Log out</span> </a>
-		<!--   SIDEBAR .//END   -->
-	</aside>
+		{% include 'includes/dashboard_sidebar.html' %}
 	<main class="col-md-9">
 		<article class="card">
 		<header class="card-header">
-			<strong class="d-inline-block mr-3">My Rating and Reviews</strong>
+			<strong class="d-inline-block mr-3">Mis Calificaciones y Reseñas</strong>
 		</header>
 		<div class="card-body">
 
-			<h5>Productos que puedes reseñar</h5>
+			<h5>Productos que puedes reseñar:</h5>
 			{% if purchased_products %}
 			<div class="table-responsive">
 			<table class="table table-hover">
 				<thead>
 					<tr>
 						<th>Producto</th>
-						<th>Precio</th>
+						
 						<th>Fecha de compra</th>
 						<th>Estado</th>
 						<th>Acción</th>
@@ -56,9 +42,7 @@
 							{% endif %}
 							<p class="title mb-0">{{ item.product.name }}</p>
 						</td>
-						<td>
-							<var class="price text-muted">${{ item.product_price|floatformat:2 }}</var>
-						</td>
+						
 						<td>{{ item.created_at|date:"d M Y" }}</td>
 						<td>
 							{% if item.ordered %}
@@ -69,10 +53,16 @@
 						</td>
 						<td>
 							{% if item.ordered %}
-								{% if item.product.id in reviewed_products %}
-									<a href="#" class="btn btn-sm btn-outline-secondary">Editar reseña</a>
+								{% if item.user_review %}
+									<a href="{% url 'edit_review' item.product.id %}"
+									   class="btn btn-sm btn-outline-secondary">
+										Editar reseña
+									</a>
 								{% else %}
-									<a href="#" class="btn btn-sm btn-primary" onclick="showReviewForm({{ item.product.id }}, '{{ item.product.name }}')">Escribir reseña</a>
+									<a href="{% url 'create_review' item.product.id %}"
+									   class="btn btn-sm btn-primary">
+										Escribir reseña
+									</a>
 								{% endif %}
 							{% else %}
 								<span class="text-muted">No disponible</span>
@@ -127,55 +117,7 @@
 </div> <!-- row.// -->
 </div>
 
-<!-- Modal para escribir reseña -->
-<div class="modal fade" id="reviewModal" tabindex="-1" role="dialog">
-	<div class="modal-dialog" role="document">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h5 class="modal-title">Escribir reseña para: <span id="modalProductName"></span></h5>
-				<button type="button" class="close" data-dismiss="modal">
-					<span>&times;</span>
-				</button>
-			</div>
-			<div class="modal-body">
-				<form action="{% url 'submit_review' 0 %}" method="post" id="reviewForm">
-					{% csrf_token %}
-					<input type="hidden" name="product_id" id="modalProductId">
-					<div>
-						<label>Calificación</label>
-						<br>
-						<div class="rate">
-							<input type="radio" name="rating" id="rating5" value="5" required><label for="rating5" title="5 estrellas">5</label>
-							<input type="radio" name="rating" id="rating4" value="4" required><label for="rating4" title="4 estrellas">4</label>
-							<input type="radio" name="rating" id="rating3" value="3" required><label for="rating3" title="3 estrellas">3</label>
-							<input type="radio" name="rating" id="rating2" value="2" required><label for="rating2" title="2 estrellas">2</label>
-							<input type="radio" name="rating" id="rating1" value="1" required><label for="rating1" title="1 estrella">1</label>
-						</div>
-						<br>
-						Título de la reseña
-						<input type="text" class="form-control" name="subject" required>
-						<br>
-						Reseña
-						<textarea class="form-control" name="review" rows="4" required></textarea>
-						<br>
-						<button type="submit" class="btn btn-primary">Enviar reseña</button>
-					</div>
-				</form>
-			</div>
-		</div>
-	</div>
-</div>
-
 </section>
 <!-- ========================= SECTION CONTENT END// ========================= -->
-
-<script>
-function showReviewForm(productId, productName) {
-	document.getElementById('modalProductId').value = productId;
-	document.getElementById('modalProductName').textContent = productName;
-	document.getElementById('reviewForm').action = '/store/submit_review/' + productId + '/';
-	$('#reviewModal').modal('show');
-}
-</script>
 
 {% endblock %}

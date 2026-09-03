@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block content %}
+
+
+
+<!-- ========================= SECTION CONTENT ========================= -->
+<section class="section-conten padding-y bg">
+
+{% include 'includes/alerts.html' %}
+<div class="container">
+
+	<div class="row">
+	{% include 'includes/dashboard_sidebar.html' %}
+	<main class="col-md-9">
+		<article class="card">
+		<header class="card-header">
+			<strong class="d-inline-block mr-3">Detalles de la Orden:</strong>
+			
+		</header>
+    
+    
+    <div class="row invoice row-printable">
+        
+        <div class="col-md-12">
+            <!-- col-lg-12 start here -->
+            <div class="panel panel-default plain" id="dash_0">
+                <!-- Start .panel -->
+                <div class="panel-body p30">
+                    <div class="row">
+                        <!-- Start .row -->
+                        <div class="col-lg-6">
+                            <!-- col-lg-6 start here -->
+                            <div class="invoice-logo"><img src="{% static 'images/logo.png' %}" alt="Invoice logo" style="max-height: 40px;"></div>
+                        </div>
+                        <!-- col-lg-6 end here -->
+                        <div class="col-lg-6">
+                            <!-- col-lg-6 start here -->
+                            <div class="invoice-from">
+                                <ul class="list-unstyled text-right">
+                                    <li><strong>Facturado a:</strong></li>
+                                    <li>{{ order.full_name }}, Tél.{{ order.phone }}</li>
+                                    <li>{{ order.address_line_1 }}</li>
+                                    <li>{{ order.city }}, {{ order.state }}, C.P. {{ order.zip_code }},</li>
+                                    <li>México</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <!-- col-lg-6 end here -->
+                        <div class="col-lg-12">
+                            <!-- col-lg-12 start here -->
+                            <div class="invoice-details mt25">
+                                <div class="well">
+                                    <ul class="list-unstyled mb0">
+                                        <li><strong>Orden:</strong> Núm. {{ order.order_number }}</li>
+                                        <li><strong>Transacción:</strong> {{ order.payment.payment_id }}</li>
+                                        <li><strong>Fecha de orden:</strong> {{ order.created_at }}</li>
+                                        <li><strong>Estado:</strong>{{ order.payment.status }} </li>
+                                    </ul>
+                                </div>
+                            </div>
+                           
+                            <div class="invoice-items">
+                                <div class="table-responsive" style="overflow: hidden; outline: none;" tabindex="0">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th class="per70 text-center">Producto</th>
+                                                <th class="per30 text-center">Precio</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in order_detail %}
+                                            <tr>
+                                                <td>{{ item.product.name }}</td>
+                                                <td class="text-center">${{ item.product_price|floatformat:2 }}</td>
+                                            </tr>
+                                            {% endfor %}
+
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="1" class="text-right">Subtotal:</th>
+                                                <th class="text-center">${{ subtotal|floatformat:2 }}</th>
+                                            </tr>
+                                            <tr>
+                                                <th colspan="1" class="text-right">Impuesto:</th>
+                                                <th class="text-center">${{ order.tax|floatformat:2 }}</th>
+                                            </tr>
+
+                                            <tr>
+                                                <th colspan="1" class="text-right">Total:</th>
+                                                <th class="text-center">${{ order.order_total|floatformat:2 }}</th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="invoice-footer mt25">
+                                <p class="text-center">Gracias por su compra!</p>
+                            </div>
+                        </div>
+                        <!-- col-lg-12 end here -->
+                    </div>
+                    <!-- End .row -->
+                </div>
+            </div>
+            <!-- End .panel -->
+        </div>
+        <!-- col-lg-12 end here -->
+    </div>
+    </div>
+
+
+{% endblock %}

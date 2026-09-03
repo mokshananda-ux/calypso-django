@@ -31,9 +31,9 @@ class Order(models.Model):
     phone = models.CharField(max_length=100)
     email = models.EmailField(max_length=100)
     address_line_1 = models.CharField(max_length=100)
-    address_line_2 = models.CharField(max_length=100, blank=True)
     state = models.CharField(max_length=100)
     city = models.CharField(max_length=100)
+    zip_code = models.CharField(max_length=10, blank=True, null=True)
     order_note = models.TextField(blank=True)
     order_total = models.DecimalField(max_digits=20, decimal_places=2)
     tax = models.DecimalField(max_digits=20, decimal_places=2)
@@ -45,9 +45,6 @@ class Order(models.Model):
 
     def full_name(self):
         return f'{self.first_name} {self.last_name}'
-
-    def full_address(self):
-            return f'{self.address_line_1} {self.address_line_2}'
 
     def __str__(self):
         return self.first_name

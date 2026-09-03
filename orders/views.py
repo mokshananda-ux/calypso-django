@@ -13,6 +13,7 @@ from carts.models import CartItem
 from .models import Order, Payment, OrderProduct
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
+from accounts.models import UserProfile
 
 
 
@@ -27,7 +28,7 @@ def _paypal_access_token():
     response = requests.post(
         f'{settings.PAYPAL_BASE_URL}/v1/oauth2/token',
         auth=(settings.PAYPAL_CLIENT_ID, settings.PAYPAL_CLIENT_SECRET),
-        headers={'Accept': 'application/json', 'Accept-Language': 'en_US'},
+        headers={'Accept': 'application/json', 'Accept-Language': 'es_MX'},
         data={'grant_type': 'client_credentials'},
         timeout=15,
     )
@@ -40,7 +41,7 @@ def _paypal_access_token():
 def paypal_create_order(request):
     order = Order.objects.filter(user=request.user, is_ordered=False).order_by('-created_at').first()
     if order is None:
-        return JsonResponse({'error': 'No pending order found.'}, status=404)
+        return JsonResponse({'error': 'No se encontró la orden pendiente.'}, status=404)
 
     try:
         token = _paypal_access_token()
@@ -71,11 +72,11 @@ def paypal_create_order(request):
 def paypal_capture_order(request):
     paypal_order_id = request.POST.get('order_id')
     if not paypal_order_id:
-        return JsonResponse({'error': 'PayPal order id is required.'}, status=400)
+        return JsonResponse({'error': 'ID de orden de PayPal es requerido.'}, status=400)
 
     order = Order.objects.filter(user=request.user, is_ordered=False).order_by('-created_at').first()
     if order is None:
-        return JsonResponse({'error': 'No pending order found.'}, status=404)
+        return JsonResponse({'error': 'No se encontró la orden pendiente.'}, status=404)
 
     try:
         token = _paypal_access_token()
@@ -97,7 +98,7 @@ def paypal_capture_order(request):
         or reference_id != order.order_number
         or amount != order.order_total
     ):
-        return JsonResponse({'error': 'PayPal payment could not be verified.'}, status=400)
+        return JsonResponse({'error': 'El pago de PayPal no pudo ser verificado.'}, status=400)
 
     with transaction.atomic():
         payment = Payment.objects.create(
@@ -144,6 +145,7 @@ def paypal_capture_order(request):
     return JsonResponse({'status': 'COMPLETED', 'order_number': order.order_number, 'payment_id': payment.payment_id})
 
 
+@login_required(login_url='login')
 def place_order(request):
     current_user = request.user
 
@@ -164,6 +166,11 @@ def place_order(request):
     tax = (2 * total) / 100
     grand_total = total + tax
 
+    # Obtener perfil del usuario para precargar datos
+    try:
+        userprofile = UserProfile.objects.get(user=current_user)
+    except UserProfile.DoesNotExist:
+        userprofile = None
 
     if request.method == 'POST':
         form = OrderForm(request.POST)
@@ -175,15 +182,15 @@ def place_order(request):
             data.phone = form.cleaned_data['phone']
             data.email = form.cleaned_data['email']
             data.address_line_1 = form.cleaned_data['address_line_1']
-            data.address_line_2 = form.cleaned_data['address_line_2']
             data.state = form.cleaned_data['state']
             data.city = form.cleaned_data['city']
+            data.zip_code = form.cleaned_data['zip_code']
             data.order_note = form.cleaned_data['order_note']
             data.order_total = grand_total
             data.tax = tax
             data.ip = request.META.get('REMOTE_ADDR')
             data.save()
-            
+
             yr = int(datetime.date.today().strftime('%Y'))
             mt = int(datetime.date.today().strftime('%m'))
             dt = int(datetime.date.today().strftime('%d'))
@@ -201,12 +208,37 @@ def place_order(request):
                 'grand_total':grand_total,
                 'tax':tax,
                 'paypal_client_id': settings.PAYPAL_CLIENT_ID,
-                
+
             }
             return render(request, 'orders/payment.html', context)
-        
+
     else:
-        return redirect('checkout')
+        # Precargar datos del usuario en el formulario
+        initial_data = {
+            'first_name': current_user.first_name,
+            'last_name': current_user.last_name,
+            'email': current_user.email,
+            'phone': current_user.phone_number,
+        }
+
+        if userprofile:
+            initial_data.update({
+                'address_line_1': userprofile.address_line_1,
+                'city': userprofile.city,
+                'state': userprofile.state,
+                'zip_code': userprofile.zip_code,
+            })
+
+        form = OrderForm(initial=initial_data)
+
+        context = {
+            'form': form,
+            'cart_items': cart_items,
+            'total': total,
+            'tax': tax,
+            'grand_total': grand_total,
+        }
+        return render(request, 'store/checkout.html', context)
 
 
 def order_complete(request):

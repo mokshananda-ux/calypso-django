@@ -1,8 +1,8 @@
 from django.shortcuts import redirect, render, get_object_or_404
 from .models import Cart, CartItem
 from store.models import Product
-from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.decorators import login_required 
+from accounts.forms import UserForm, UserProfileForm
 
 
 def _cart_id(request):
@@ -112,6 +112,8 @@ def cart(request):
 
 @login_required(login_url='login')
 def checkout(request):
+    user_form = UserForm(instance=request.user)
+    profile_form = UserProfileForm(instance=request.user.userprofile)
     total = 0
     cart_items = []
 
@@ -134,5 +136,7 @@ def checkout(request):
         'tax': tax,
         'grand_total': grand_total,
         'cart_items': cart_items,
+        'user_form': user_form,
+        'profile_form': profile_form,
     }
     return render(request, 'store/checkout.html', context)

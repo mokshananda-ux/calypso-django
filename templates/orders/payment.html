@@ -14,12 +14,12 @@
 <!-- ============================ COMPONENT 1 ================================= -->
 
 
-<h4 class="text-center mb10"> Review your order and make payment  </h4>
+<h4 class="text-center mb10"> Revísa tu orden y realiza el pago </h4>
 <div class="row">
 	
 	<aside class="col-lg-8">
 		<div class="card">
-			<h5 class="card-title mb-4">Billing Adress</h5>
+			<h5 class="card-title mb-4">Dirección de facturación</h5>
 				<div class="card-body">
 				<p class="card-text mb-0">{{order.full_name}}</p>
 				<p class="card-text" mb-0>{{order.full_address}}</p>
@@ -34,14 +34,14 @@
 		</div> <!-- card.// -->
 
 		<div class="card">
-			<h5 class="card-title mb-4">Payment Method</h5>
+			<h5 class="card-title mb-4">Método de pago</h5>
 				<div class="card-body">
 				<p class="card-text">PayPal...</p>
 				</div>
 		</div> <!-- card.// -->
 
 		<div class="card">
-			<h5 class="card-title mb-4">Review Products</h5>
+			<h5 class="card-title mb-4">Revisa tus productos</h5>
 				<div class="card-body">
 			        <table class="table table-borderless table-shopping-cart">
 
@@ -86,15 +86,15 @@
 		<div class="card">
 		<div class="card-body">
 			<dl class="dlist-align">
-			  <dt>Total price:</dt>
+			  <dt>Precio total:</dt>
 			  <dd class="text-right">${{ total|floatformat:2 }}</dd>
 			</dl>
 			<dl class="dlist-align">
-			  <dt>Tax:</dt>
+			  <dt>Impuesto:</dt>
 			  <dd class="text-right"> ${{ tax|floatformat:2 }}</dd>
 			</dl>
 			<dl class="dlist-align">
-			  <dt>GrandTotal:</dt>
+			  <dt>Total:</dt>
 			  <dd class="text-right text-dark b"><strong>${{ grand_total|floatformat:2 }}</strong></dd>
 			</dl>
 			<hr>

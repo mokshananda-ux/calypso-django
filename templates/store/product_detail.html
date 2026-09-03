@@ -11,11 +11,26 @@
 <div class="card">
 	<div class="row no-gutters">
 		<aside class="col-md-6">
-<article class="gallery-wrap"> 
+<article class="gallery-wrap">
 	<div class="img-big-wrap">
-	   <a href="#"><img src="{% if single_product.image %}{{ single_product.image.url }}{% else %}{% static 'images/items/1.jpg' %}{% endif %}" alt="{{ single_product.name }}"></a>
+	   <img id="mainImage" src="{% if single_product.image %}{{ single_product.image.url }}{% else %}{% static 'images/items/1.jpg' %}{% endif %}" alt="{{ single_product.name }}">
 	</div> <!-- img-big-wrap.// -->
-	
+
+	<!-- Miniaturas horizontales -->
+	{% if product_gallery %}
+	<div class="img-small-wrap mt-3">
+		<div class="row">
+			{% for gallery_item in product_gallery %}
+			<div class="col-3">
+				<a href="javascript:void(0)" onclick="changeMainImage('{{ gallery_item.image.url }}')" class="img-thumbnail">
+					<img src="{{ gallery_item.image.url }}" alt="{{ single_product.name }}" class="img-fluid" style="height: 100px; width: 100px; object-fit: cover;">
+				</a>
+			</div>
+			{% endfor %}
+		</div>
+	</div>
+	{% endif %}
+
 </article> <!-- gallery-wrap .end// -->
 		</aside>
 		<main class="col-md-6 border-left">
@@ -44,7 +59,7 @@
 
 	{% else %}
 	<div class="alert alert-danger" role="alert">
-		This product is currently unavailable.
+		Este producto no está disponible actualmente.
 	</div>
 	{% endif %}
 
@@ -60,5 +75,11 @@
 </div> <!-- container .//  -->
 </section>
 <!-- ========================= SECTION CONTENT END// ========================= -->
+
+<script>
+function changeMainImage(imageUrl) {
+	document.getElementById('mainImage').src = imageUrl;
+}
+</script>
 
 {% endblock %}
