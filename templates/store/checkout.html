@@ -20,11 +20,11 @@
 
             <div class="form-row">
                 <div class="col form-group">
-                    <label for="">Nombres</label>
+                    <label for="">Nombre(s)</label>
                         <input type= "text" name="first_name" class= "form-control" value="{{ user_form.first_name.value|default:'' }}" required>
                 </div>
                 <div class="col form-group">
-                    <label for="">Apellidos</label>
+                    <label for="">Apellido(s)</label>
                         <input type= "text" name="last_name" class= "form-control" value="{{ user_form.last_name.value|default:'' }}" required>
                 </div>
             </div>
@@ -42,7 +42,7 @@
 
             <div class="form-row">
                 <div class="col form-group">
-                    <label for="">Dirección Completa (Calle, Número Ext/Int, Colonia/Fraccionamiento)</label>
+                    <label for="">Dirección Completa (Calle, Número Ext/Int, Colonia/Fraccionamiento/Sección)</label>
                         <input type= "text" name="address_line_1" class= "form-control" value="{{ profile_form.address_line_1.value|default:'' }}" required>
                 </div>
 

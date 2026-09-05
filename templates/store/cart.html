@@ -41,7 +41,7 @@
 			<div class="aside"><img src="{% if cart_item.product.image %}{{ cart_item.product.image.url }}{% else %}{% static 'images/items/1.jpg' %}{% endif %}" class="img-sm" alt="{{ cart_item.product.name }}"></div>
 			<figcaption class="info">
 				<a href="{{ cart_item.product.get_url }}" class="title text-dark">{{ cart_item.product.name }}</a>
-				<p class="text-muted small">Matrix: 25 Mpx <br> Brand: {{ cart_item.product.brand }}</p>
+				<p class="text-muted small"> Marca: {{ cart_item.product.brand }}</p>
 			</figcaption>
 		</figure>
 	</td>
@@ -53,7 +53,7 @@
 		</div> <!-- price-wrap .// -->
 	</td>
 	<td class="text-right"> 
-	<a href="{% url 'remove_cart' cart_item.product.id %}" onclick="return confirm('¿Estás seguro de que quieres eliminar este artículo de tu carrito?');" class="btn btn-danger"> Remove</a>
+	<a href="{% url 'remove_cart' cart_item.product.id %}" onclick="return confirm('¿Estás seguro de que quieres eliminar este artículo de tu carrito?');" class="btn btn-danger"> Quitar</a>
 	</td>
 	</tr>
 	{% endfor %}
@@ -68,22 +68,22 @@
 		<div class="card">
 		<div class="card-body">
 			<dl class="dlist-align">
-			  <dt>Total price:</dt>
+			  <dt>Precio total:</dt>
 			  <dd class="text-right">${{ total|floatformat:2 }}</dd>
 			</dl>
 			<dl class="dlist-align">
-			  <dt>Tax:</dt>
+			  <dt>Impuesto:</dt>
 			  <dd class="text-right"> ${{ tax|floatformat:2 }}</dd>
 			</dl>
 			<dl class="dlist-align">
-			  <dt>GrandTotal:</dt>
+			  <dt>Total:</dt>
 			  <dd class="text-right text-dark b"><strong>${{ grand_total|floatformat:2 }}</strong></dd>
 			</dl>
 			<hr>
 			<p class="text-center mb-3">
 				<img src="{% static 'images/misc/payments.png' %}" height="26">
 			</p>
-			<a href="{% url 'checkout' %}" class="btn btn-primary btn-block" onclick="return confirm('¿Estás seguro de que quieres realizar esta compra?');"> Checkout </a>
+			<a href="{% url 'checkout' %}" class="btn btn-primary btn-block" onclick="return confirm('¿Estás seguro de que quieres realizar esta compra?');"> Finalizar compra </a>
 			<a href="{% url 'store' %}" class="btn btn-light btn-block">Continuar Comprando</a>
 		</div> <!-- card-body.// -->
 		</div> <!-- card.// -->

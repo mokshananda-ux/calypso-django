@@ -28,8 +28,8 @@ class RegistrationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(RegistrationForm, self).__init__(*args, **kwargs)
-        self.fields['first_name'].widget.attrs['placeholder'] = 'Ingresa Nombre'
-        self.fields['last_name'].widget.attrs['placeholder'] = 'Ingresa Apellido'
+        self.fields['first_name'].widget.attrs['placeholder'] = 'Ingresa Nombre(s)'
+        self.fields['last_name'].widget.attrs['placeholder'] = 'Ingresa Apellido(s)'
         self.fields['email'].widget.attrs['placeholder'] = 'Ingresa Correo Electrónico'
         self.fields['phone_number'].widget.attrs['placeholder'] = 'Ingresa Teléfono'
         self.fields['password'].widget.attrs['placeholder'] = 'Ingresa Contraseña'

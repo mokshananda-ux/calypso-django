@@ -22,12 +22,12 @@
 			<h5 class="card-title mb-4">Dirección de facturación</h5>
 				<div class="card-body">
 				<p class="card-text mb-0">{{order.full_name}}</p>
-				<p class="card-text" mb-0>{{order.full_address}}</p>
-				<p class="card-text mb-0">{{order.city}} {{order.state}}</p>
+				<p class="card-text" mb-0>{{order.address_line_1}}</p>
+				<p class="card-text mb-0">{{order.city}}, {{order.state}}. C.P {{order.zip_code}}</p>
 				<p class="card-text" mb-0>{{order.email}}</p>
-				<p class="card-text" mb-0>{{order.phone}}</p>
+				<p class="card-text" mb-0>Tél: {{order.phone}}</p>
 				{% if order.order_note %}
-					<b> Order Note: </b> {{order.order_note}}
+					<b> Nota de la orden: </b> {{order.order_note}}
 				{% endif %}
 
 				</div>
@@ -61,7 +61,7 @@
 								<div class="aside"><img src="{% if cart_item.product.image %}{{ cart_item.product.image.url }}{% else %}{% static 'images/items/1.jpg' %}{% endif %}" class="img-sm" alt="{{ cart_item.product.name }}"></div>
 								<figcaption class="info">
 									<a href="{{ cart_item.product.get_url }}" class="title text-dark">{{ cart_item.product.name }}</a>
-									<p class="text-muted small">Matrix: 25 Mpx <br> Brand: {{ cart_item.product.brand }}</p>
+									<p class="text-muted small"> <br> Brand: {{ cart_item.product.brand }}</p>
 								</figcaption>
 							</figure>
 						</td>

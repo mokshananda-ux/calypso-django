@@ -43,6 +43,8 @@
 </div> 
 
 <p>{{ single_product.description }}</p>
+<p>Marca: {{ single_product.brand }}</p>
+
 
 
 	
@@ -59,7 +61,7 @@
 
 	{% else %}
 	<div class="alert alert-danger" role="alert">
-		Este producto no está disponible actualmente.
+		Este producto ya fue vendido.
 	</div>
 	{% endif %}
 
