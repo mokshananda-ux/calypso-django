@@ -2,10 +2,6 @@
 
 {% load static %}
 
-{% block extra_head %}
-<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id|urlencode }}&currency=USD"></script>
-{% endblock %}
-
 {% block content %}
 
 <section class="section-content padding-y bg">
@@ -36,7 +32,7 @@
 		<div class="card">
 			<h5 class="card-title mb-4">Método de pago</h5>
 				<div class="card-body">
-				<p class="card-text">PayPal...</p>
+				<p class="card-text">Pago seguro con Stripe.</p>
 				</div>
 		</div> <!-- card.// -->
 
@@ -101,7 +97,7 @@
 			<p class="text-center mb-3">
 				<img src="{% static 'images/misc/payments.png' %}" height="26">
 			</p>
-			<div id="paypal-button-container"></div>
+			<button id="stripe-checkout-button" class="btn btn-primary btn-block" type="button">Pagar con Stripe</button>
 			<div id="result-message"></div>
 		</div> <!-- card-body.// -->
 		</div> <!-- card.// -->
@@ -118,36 +114,27 @@
 </section>
 <!-- ========================= SECTION CONTENT END// ========================= -->
 
-{% if paypal_client_id %}
+{% if stripe_configured %}
 <script>
-	paypal.Buttons({
-		createOrder: () => fetch('{% url "paypal_create_order" %}', {
+	document.getElementById('stripe-checkout-button').addEventListener('click', function () {
+		const button = this;
+		const message = document.getElementById('result-message');
+		button.disabled = true;
+		fetch('{% url "stripe_create_checkout_session" %}', {
 			method: 'POST',
 			headers: {'X-CSRFToken': '{{ csrf_token }}'}
-		}).then(response => response.json()).then(data => data.id),
-		onApprove: data => fetch('{% url "paypal_capture_order" %}', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/x-www-form-urlencoded',
-				'X-CSRFToken': '{{ csrf_token }}'
-			},
-			body: `order_id=${encodeURIComponent(data.orderID)}`
-		}).then(response => response.json()).then(data => {
-			if (data.status !== 'COMPLETED') throw new Error(data.error || 'Payment failed');
-			// Redirigir a la página de confirmación de orden
-			window.location.href = `{% url 'order_complete' %}?order_number=${data.order_number}&payment_id=${data.order_number}`;
-		}),
-		onCancel: () => {
-			document.getElementById('result-message').innerHTML = '<p class="text-warning">Payment cancelled.</p>';
-		},
-		onError: error => {
-			console.error(error);
-			document.getElementById('result-message').innerHTML = '<p class="text-danger">Payment could not be completed.</p>';
-		}
-	}).render('#paypal-button-container');
+		}).then(async response => {
+			const data = await response.json();
+			if (!response.ok) throw new Error(data.error || 'No se pudo iniciar el pago.');
+			window.location.assign(data.url);
+		}).catch(error => {
+			message.textContent = error.message;
+			button.disabled = false;
+		});
+	});
 </script>
 {% else %}
-<p class="text-danger">PayPal is not configured. Set PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET.</p>
+<p class="text-danger">Stripe no está configurado. Define STRIPE_SECRET_KEY.</p>
 {% endif %}
 
 {% endblock %}

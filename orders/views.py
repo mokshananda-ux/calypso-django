@@ -1,12 +1,14 @@
 import datetime
 from decimal import Decimal
 
-import requests
+import stripe
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
+from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from .forms import OrderForm
 from carts.models import CartItem
@@ -19,130 +21,125 @@ from accounts.models import UserProfile
 
 # Create your views here.
 def payment(request):
-    return render(request, 'orders/payment.html', {
-        'paypal_client_id': settings.PAYPAL_CLIENT_ID,
-    })
-
-
-def _paypal_access_token():
-    response = requests.post(
-        f'{settings.PAYPAL_BASE_URL}/v1/oauth2/token',
-        auth=(settings.PAYPAL_CLIENT_ID, settings.PAYPAL_CLIENT_SECRET),
-        headers={'Accept': 'application/json', 'Accept-Language': 'es_MX'},
-        data={'grant_type': 'client_credentials'},
-        timeout=15,
-    )
-    response.raise_for_status()
-    return response.json()['access_token']
+    return render(request, 'orders/payment.html', {'stripe_configured': True})
 
 
 @login_required
 @require_POST
-def paypal_create_order(request):
+def stripe_create_checkout_session(request):
     order = Order.objects.filter(user=request.user, is_ordered=False).order_by('-created_at').first()
     if order is None:
         return JsonResponse({'error': 'No se encontró la orden pendiente.'}, status=404)
 
     try:
-        token = _paypal_access_token()
-        response = requests.post(
-            f'{settings.PAYPAL_BASE_URL}/v2/checkout/orders',
-            headers={
-                'Authorization': f'Bearer {token}',
-                'Content-Type': 'application/json',
-            },
-            json={
-                'intent': 'CAPTURE',
-                'purchase_units': [{
-                    'reference_id': order.order_number,
-                    'amount': {'currency_code': 'USD', 'value': f'{order.order_total:.2f}'},
-                }],
-            },
-            timeout=15,
+        session = stripe.checkout.Session.create(
+            api_key=settings.STRIPE_SECRET_KEY,
+            idempotency_key=f'checkout-order-{order.pk}',
+            mode='payment',
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {'name': f'Orden Calypso {order.order_number}'},
+                    'unit_amount': int(order.order_total * 100),
+                },
+                'quantity': 1,
+            }],
+            client_reference_id=str(order.user_id),
+            metadata={'order_id': str(order.pk), 'order_number': order.order_number},
+            success_url=(
+                request.build_absolute_uri(reverse('order_complete'))
+                + '?session_id={CHECKOUT_SESSION_ID}'
+            ),
+            cancel_url=request.build_absolute_uri(reverse('place_order')),
         )
-        response.raise_for_status()
-    except (requests.RequestException, KeyError) as error:
-        return JsonResponse({'error': str(error)}, status=502)
+    except stripe.StripeError:
+        return JsonResponse({'error': 'No se pudo iniciar el pago con Stripe.'}, status=502)
 
-    return JsonResponse({'id': response.json()['id']})
+    return JsonResponse({'url': session.url})
 
 
-@login_required
-@require_POST
-def paypal_capture_order(request):
-    paypal_order_id = request.POST.get('order_id')
-    if not paypal_order_id:
-        return JsonResponse({'error': 'ID de orden de PayPal es requerido.'}, status=400)
+def _finalize_stripe_session(checkout_session):
+    if checkout_session.get('payment_status') != 'paid':
+        raise ValueError('El pago todavía no está confirmado.')
 
-    order = Order.objects.filter(user=request.user, is_ordered=False).order_by('-created_at').first()
-    if order is None:
-        return JsonResponse({'error': 'No se encontró la orden pendiente.'}, status=404)
-
-    try:
-        token = _paypal_access_token()
-        response = requests.post(
-            f'{settings.PAYPAL_BASE_URL}/v2/checkout/orders/{paypal_order_id}/capture',
-            headers={'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'},
-            timeout=15,
-        )
-        response.raise_for_status()
-        paypal_data = response.json()
-        capture = paypal_data['purchase_units'][0]['payments']['captures'][0]
-    except (requests.RequestException, KeyError, IndexError) as error:
-        return JsonResponse({'error': str(error)}, status=502)
-
-    reference_id = paypal_data['purchase_units'][0].get('reference_id')
-    amount = Decimal(capture['amount']['value'])
-    if (
-        paypal_data.get('status') != 'COMPLETED'
-        or reference_id != order.order_number
-        or amount != order.order_total
-    ):
-        return JsonResponse({'error': 'El pago de PayPal no pudo ser verificado.'}, status=400)
+    metadata = checkout_session.get('metadata') or {}
+    order_id = metadata.get('order_id')
+    if not order_id:
+        raise ValueError('La sesión de Stripe no está asociada a una orden.')
 
     with transaction.atomic():
+        order = Order.objects.select_for_update().get(pk=order_id)
+        if str(order.user_id) != str(checkout_session.get('client_reference_id')):
+            raise ValueError('La sesión de Stripe no corresponde al usuario de la orden.')
+        if (
+            checkout_session.get('currency') != 'usd'
+            or checkout_session.get('amount_total') != int(order.order_total * 100)
+        ):
+            raise ValueError('El total de Stripe no coincide con el total de la orden.')
+
+        if order.is_ordered:
+            if order.payment is None:
+                raise ValueError('La orden pagada no tiene un registro de pago.')
+            return order, order.payment
+
         payment = Payment.objects.create(
-            user=request.user,
-            payment_id=capture['id'],
-            payment_method='PayPal',
-            amount_paid=amount,
-            status=capture['status'],
+            user=order.user,
+            payment_id=checkout_session.get('payment_intent') or checkout_session.get('id'),
+            payment_method='Stripe',
+            amount_paid=Decimal(checkout_session['amount_total']) / 100,
+            status='COMPLETED',
         )
         order.payment = payment
         order.is_ordered = True
         order.status = 'Accepted'
         order.save(update_fields=['payment', 'is_ordered', 'status', 'updated_at'])
 
-        # Mover items del carrito a OrderProducts
-        cart_items = CartItem.objects.filter(user=request.user, is_active=True)
+        cart_items = CartItem.objects.filter(user=order.user, is_active=True)
         for item in cart_items:
-            orderproduct = OrderProduct()
-            orderproduct.order_id = order.id
-            orderproduct.payment = payment
-            orderproduct.user_id = request.user.id
-            orderproduct.product_id = item.product_id
-            orderproduct.product_price = item.product.price
-            orderproduct.ordered = True
-            orderproduct.save()
-
-            # Marcar el producto como no disponible (productos únicos e irrepetibles)
+            OrderProduct.objects.create(
+                order=order,
+                payment=payment,
+                user=order.user,
+                product=item.product,
+                product_price=item.product.price,
+                ordered=True,
+            )
             item.product.is_available = False
             item.product.save()
 
-        # Enviar email de confirmación (fuera del bucle para enviar solo un email)
-        mail_subject = 'Gracias por tu compra'
         message = render_to_string('orders/order_recieved_email.html', {
-            'user': request.user,
+            'user': order.user,
             'order': order,
         })
-        to_email = request.user.email
-        send_email = EmailMessage(mail_subject, message, to=[to_email])
-        send_email.send()
-
-        # Limpiar el carrito después de la compra
+        EmailMessage('Gracias por tu compra', message, to=[order.user.email]).send()
         cart_items.delete()
 
-    return JsonResponse({'status': 'COMPLETED', 'order_number': order.order_number, 'payment_id': payment.payment_id})
+    return order, payment
+
+
+@csrf_exempt
+@require_POST
+def stripe_webhook(request):
+    if not settings.STRIPE_WEBHOOK_SECRET:
+        return JsonResponse({'error': 'Webhook de Stripe no configurado.'}, status=503)
+
+    try:
+        event = stripe.Webhook.construct_event(
+            request.body,
+            request.headers.get('Stripe-Signature', ''),
+            settings.STRIPE_WEBHOOK_SECRET,
+        )
+    except (ValueError, stripe.SignatureVerificationError):
+        return JsonResponse({'error': 'Firma de Stripe inválida.'}, status=400)
+
+    if event['type'] == 'checkout.session.completed':
+        try:
+            _finalize_stripe_session(event['data']['object'])
+        except (Order.DoesNotExist, ValueError):
+            return JsonResponse({'error': 'No se pudo verificar la orden pagada.'}, status=400)
+
+    return JsonResponse({'received': True})
 
 
 @login_required(login_url='login')
@@ -207,7 +204,7 @@ def place_order(request):
                 'total':total,
                 'grand_total':grand_total,
                 'tax':tax,
-                'paypal_client_id': settings.PAYPAL_CLIENT_ID,
+                'stripe_configured': True,
 
             }
             return render(request, 'orders/payment.html', context)
@@ -241,14 +238,32 @@ def place_order(request):
         return render(request, 'store/checkout.html', context)
 
 
+@login_required
 def order_complete(request):
-    order_number = request.GET.get('order_number')
-    transID = request.GET.get('payment_id')
+    session_id = request.GET.get('session_id')
 
     try:
-        order = Order.objects.get(order_number=order_number, is_ordered=True)
+        if session_id:
+            checkout_session = stripe.checkout.Session.retrieve(
+                session_id,
+                api_key=settings.STRIPE_SECRET_KEY,
+            )
+            order, payment = _finalize_stripe_session(checkout_session)
+            if order.user_id != request.user.id:
+                return redirect('home')
+            order_number = order.order_number
+            transID = payment.payment_id
+        else:
+            order_number = request.GET.get('order_number')
+            transID = request.GET.get('payment_id')
+            order = Order.objects.get(
+                order_number=order_number,
+                is_ordered=True,
+                user=request.user,
+            )
+            payment = Payment.objects.get(payment_id=transID)
+
         ordered_products = OrderProduct.objects.filter(order_id=order.id)
-        payment = Payment.objects.get(payment_id=transID)
 
         # Calcular el subtotal
         subtotal = 0
@@ -264,6 +279,6 @@ def order_complete(request):
             'subtotal': subtotal,
         }
         return render(request, 'orders/order_complete.html', context)
-    except (Payment.DoesNotExist, Order.DoesNotExist):
+    except (Payment.DoesNotExist, Order.DoesNotExist, ValueError, stripe.StripeError):
         return redirect('home')
 
